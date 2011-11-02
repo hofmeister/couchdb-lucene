@@ -2,12 +2,12 @@ package com.github.rnewson.couchdb.lucene;
 
 /**
  * Copyright 2009 Robert Newson
- * 
- * Licensed under the Apache License, Version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0 
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,6 +23,10 @@ import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.nio.SelectChannelConnector;
+import org.mortbay.jetty.security.Constraint;
+import org.mortbay.jetty.security.ConstraintMapping;
+import org.mortbay.jetty.security.HashUserRealm;
+import org.mortbay.jetty.security.SecurityHandler;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.ServletHolder;
@@ -45,6 +49,31 @@ public class Main {
         connector.setPort(config.getConfiguration().getInt("lucene.port", 5985));
 
         LOG.info("Accepting connections with " + connector);
+
+        //Setup auth
+
+        String user = config.getConfiguration().getString("lucene.username");
+        String pass = config.getConfiguration().getString("lucene.password");
+        boolean doAuth = config.getConfiguration().getBoolean("lucene.auth",false);
+
+        if (doAuth) {
+            Constraint constraint = new Constraint();
+            constraint.setName(Constraint.__BASIC_AUTH);;
+            constraint.setRoles(new String[]{"user"});
+            constraint.setAuthenticate(true);
+
+            ConstraintMapping cm = new ConstraintMapping();
+            cm.setConstraint(constraint);
+            cm.setPathSpec("/*");
+
+
+            SecurityHandler sh = new SecurityHandler();
+            HashUserRealm userRealm = new HashUserRealm("Couchdb-Lucene");
+            userRealm.put(user,pass);
+            sh.setUserRealm(userRealm);
+            sh.setConstraintMappings(new ConstraintMapping[]{cm});
+
+        }
 
         server.setConnectors(new Connector[]{connector});
         server.setStopAtShutdown(true);
