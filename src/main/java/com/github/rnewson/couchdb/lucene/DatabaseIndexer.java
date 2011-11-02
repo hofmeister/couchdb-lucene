@@ -141,6 +141,7 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 			final QueryParser parser = new CustomQueryParser(Constants.VERSION,
 					Constants.DEFAULT_FIELD, analyzer);
 			parser.setDefaultOperator(operator);
+			parser.setAllowLeadingWildcard(ini.getBoolean("lucene.allowLeadingWildcard", false));
 			return parser.parse(query);
 		}
 
