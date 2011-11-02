@@ -50,13 +50,24 @@ public class Main {
 
         LOG.info("Accepting connections with " + connector);
 
-        //Setup auth
 
+        server.setConnectors(new Connector[]{connector});
+        server.setStopAtShutdown(true);
+        server.setSendServerVersion(false);
+
+        final LuceneServlet servlet = new LuceneServlet(config.getClient(), dir, config.getConfiguration());
+
+        final Context context = new Context(server, "/", Context.NO_SESSIONS);
+
+        //Setup auth
         String user = config.getConfiguration().getString("lucene.username");
         String pass = config.getConfiguration().getString("lucene.password");
         boolean doAuth = config.getConfiguration().getBoolean("lucene.auth",false);
 
         if (doAuth) {
+
+            LOG.info("Enabling authentication");
+
             Constraint constraint = new Constraint();
             constraint.setName(Constraint.__BASIC_AUTH);;
             constraint.setRoles(new String[]{"user"});
@@ -70,18 +81,13 @@ public class Main {
             SecurityHandler sh = new SecurityHandler();
             HashUserRealm userRealm = new HashUserRealm("Couchdb-Lucene");
             userRealm.put(user,pass);
+            userRealm.addUserToRole(user,"user");
             sh.setUserRealm(userRealm);
             sh.setConstraintMappings(new ConstraintMapping[]{cm});
 
+            context.setSecurityHandler(sh);
         }
 
-        server.setConnectors(new Connector[]{connector});
-        server.setStopAtShutdown(true);
-        server.setSendServerVersion(false);
-
-        final LuceneServlet servlet = new LuceneServlet(config.getClient(), dir, config.getConfiguration());
-
-        final Context context = new Context(server, "/", Context.NO_SESSIONS | Context.NO_SECURITY);
         context.addServlet(new ServletHolder(servlet), "/*");
         context.addFilter(new FilterHolder(new GzipFilter()), "/*", Handler.DEFAULT);
         context.setErrorHandler(new JSONErrorHandler());
