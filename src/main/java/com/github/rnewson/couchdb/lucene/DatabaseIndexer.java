@@ -326,7 +326,8 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 			}
 
 			try {
-                final JSONObject json = new JSONObject(line);
+				
+                final JSONObject json = new JSONObjectIgnoreDuplicates(line);
 
                 if (json.has("error")) {
                 	logger.warn("Indexing stopping due to error: " + json);
@@ -403,7 +404,7 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
                 }
             } catch (final JSONException e) {
                 logger.error("JSON exception in changes loop", e);
-                break loop;
+                continue loop;
             }
 		}
 		req.abort();
